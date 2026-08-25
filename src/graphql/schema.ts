@@ -42,10 +42,16 @@ export const typeDefs = /* GraphQL */ `
     windSpeedMax: Float!
   }
 
+  type ForecastDaySurf {
+    date: String!
+    waveHeightMax: Float!
+  }
+
   type DailyActivityScore {
     date: String!
     score: Float!
     weather: ForecastDayWeather!
+    surf: ForecastDaySurf
   }
 
   type ActivityWeeklyScores {

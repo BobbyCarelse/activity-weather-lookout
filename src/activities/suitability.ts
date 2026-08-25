@@ -1,8 +1,5 @@
 import { Activity, SurfConditions, WeatherSnapshot } from "../weather/types";
-
-// "rain ≈ 0" per CONTEXT.md — Open-Meteo reports rain in mm/h, so anything
-// below this is noise rather than active rainfall.
-const NO_RAIN_THRESHOLD_MM = 0.1;
+import { NO_RAIN_THRESHOLD_MM } from "./constants";
 
 export function isSkiingSuitable(weather: WeatherSnapshot): boolean {
   return (

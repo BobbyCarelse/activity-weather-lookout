@@ -4,17 +4,13 @@ export type Activity =
   | "OUTDOOR_SIGHTSEEING"
   | "INDOOR_SIGHTSEEING";
 
-export const ACTIVITIES: Activity[] = [
-  "SKIING",
-  "SURFING",
-  "OUTDOOR_SIGHTSEEING",
-  "INDOOR_SIGHTSEEING",
-];
-
-export interface GeocodingMatch {
-  name: string;
+export interface Coordinates {
   latitude: number;
   longitude: number;
+}
+
+export interface GeocodingMatch extends Coordinates {
+  name: string;
   country: string | null;
   admin1: string | null;
 }

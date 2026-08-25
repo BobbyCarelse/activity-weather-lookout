@@ -3,6 +3,9 @@ import {
   ForecastDaySurf,
   ForecastDayWeather,
 } from "../weather/types";
+import { NO_RAIN_THRESHOLD_MM } from "./constants";
+
+type Band = { ideal: [number, number]; acceptable: [number, number] };
 
 /**
  * Scores `value` against a two-band model: 100 inside `ideal`, 0 outside
@@ -28,22 +31,12 @@ export function scoreBand(
   return ((acceptableMax - value) / (acceptableMax - idealMax)) * 100;
 }
 
-const SKIING_TEMPERATURE: { ideal: [number, number]; acceptable: [number, number] } =
-  { ideal: [-15, -5], acceptable: [-20, 2] };
-const SURFING_WAVE_HEIGHT: { ideal: [number, number]; acceptable: [number, number] } =
-  { ideal: [0.6, 2], acceptable: [0.6, 2.5] };
-const SURFING_WIND_SPEED: { ideal: [number, number]; acceptable: [number, number] } =
-  { ideal: [0, 15], acceptable: [0, 30] };
-const OUTDOOR_TEMPERATURE: { ideal: [number, number]; acceptable: [number, number] } =
-  { ideal: [15, 24], acceptable: [10, 24] };
-const OUTDOOR_RAIN: { ideal: [number, number]; acceptable: [number, number] } =
-  { ideal: [0, 0], acceptable: [0, 2.5] };
-const OUTDOOR_WIND_SPEED: { ideal: [number, number]; acceptable: [number, number] } =
-  { ideal: [0, 20], acceptable: [0, 30] };
-
-// "rain ≈ 0" per CONTEXT.md — mirrors the same epsilon used for the
-// real-time Skiing Suitability gate.
-const NO_RAIN_THRESHOLD_MM = 0.1;
+const SKIING_TEMPERATURE: Band = { ideal: [-15, -5], acceptable: [-20, 2] };
+const SURFING_WAVE_HEIGHT: Band = { ideal: [0.6, 2], acceptable: [0.6, 2.5] };
+const SURFING_WIND_SPEED: Band = { ideal: [0, 15], acceptable: [0, 30] };
+const OUTDOOR_TEMPERATURE: Band = { ideal: [15, 24], acceptable: [10, 24] };
+const OUTDOOR_RAIN: Band = { ideal: [0, 0], acceptable: [0, 2.5] };
+const OUTDOOR_WIND_SPEED: Band = { ideal: [0, 20], acceptable: [0, 30] };
 
 // Fresh snowfall is a bonus on top of Skiing's temperature/rain score, not a
 // gated variable — the daily forecast has no snow_depth, so we can't know

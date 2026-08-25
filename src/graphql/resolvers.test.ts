@@ -161,5 +161,29 @@ describe("Query.weeklyForecast", () => {
 
     const surfing = result.activities.find((a: { activity: string }) => a.activity === "SURFING")!;
     expect(surfing.days.every((d: { score: number }) => d.score === 0)).toBe(true);
+    expect(surfing.days.every((d: { surf: unknown }) => d.surf === null)).toBe(true);
+  });
+
+  it("includes the raw wave height alongside each day's score, for every activity", async () => {
+    mockOpenMeteo({
+      geocoding: singleGeocodingMatch,
+      forecastDaily: {
+        daily: {
+          time: ["2026-08-26"],
+          temperature_2m_mean: [18],
+          rain_sum: [0],
+          snowfall_sum: [0],
+          wind_speed_10m_max: [10],
+        },
+      },
+      marineDaily: {
+        daily: { time: ["2026-08-26"], wave_height_max: [1.2] },
+      },
+    });
+
+    const result = await resolvers.Query.weeklyForecast(null, { city: "Chamonix" });
+    const surfing = result.activities.find((a: { activity: string }) => a.activity === "SURFING")!;
+
+    expect(surfing.days[0].surf).toEqual({ date: "2026-08-26", waveHeightMax: 1.2 });
   });
 });

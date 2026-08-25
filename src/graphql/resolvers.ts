@@ -23,8 +23,8 @@ export const resolvers = {
       const match = await resolveCity(args.city);
 
       const [weather, surfConditions] = await Promise.all([
-        fetchCurrentWeather(match.latitude, match.longitude),
-        fetchCurrentSurfConditions(match.latitude, match.longitude),
+        fetchCurrentWeather(match),
+        fetchCurrentSurfConditions(match),
       ]);
 
       return {
@@ -41,8 +41,8 @@ export const resolvers = {
       // Both calls request the same coordinates and the same 7-day window,
       // so the two daily series line up positionally by index.
       const [days, surfDays] = await Promise.all([
-        fetchWeeklyWeatherForecast(match.latitude, match.longitude),
-        fetchWeeklySurfForecast(match.latitude, match.longitude),
+        fetchWeeklyWeatherForecast(match),
+        fetchWeeklySurfForecast(match),
       ]);
 
       const scores = evaluateWeeklyScores(days, surfDays);
@@ -52,10 +52,11 @@ export const resolvers = {
         activities: (Object.keys(scores) as Array<keyof typeof scores>).map(
           (activity) => ({
             activity,
-            days: scores[activity].map((day) => ({
+            days: scores[activity].map((day, index) => ({
               date: day.date,
               score: day.score,
               weather: day.raw,
+              surf: surfDays[index] ?? null,
             })),
           }),
         ),

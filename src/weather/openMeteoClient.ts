@@ -1,5 +1,6 @@
 import { env } from "../config/env";
 import {
+  Coordinates,
   ForecastDaySurf,
   ForecastDayWeather,
   GeocodingMatch,
@@ -51,10 +52,10 @@ interface CurrentWeatherResponse {
   };
 }
 
-export async function fetchCurrentWeather(
-  latitude: number,
-  longitude: number,
-): Promise<WeatherSnapshot> {
+export async function fetchCurrentWeather({
+  latitude,
+  longitude,
+}: Coordinates): Promise<WeatherSnapshot> {
   const url = new URL(env.openMeteoForecastBaseUrl);
   url.searchParams.set("latitude", String(latitude));
   url.searchParams.set("longitude", String(longitude));
@@ -88,10 +89,10 @@ interface CurrentMarineResponse {
   };
 }
 
-export async function fetchCurrentSurfConditions(
-  latitude: number,
-  longitude: number,
-): Promise<SurfConditions | null> {
+export async function fetchCurrentSurfConditions({
+  latitude,
+  longitude,
+}: Coordinates): Promise<SurfConditions | null> {
   const url = new URL(env.openMeteoMarineBaseUrl);
   url.searchParams.set("latitude", String(latitude));
   url.searchParams.set("longitude", String(longitude));
@@ -132,10 +133,10 @@ interface DailyWeatherResponse {
   };
 }
 
-export async function fetchWeeklyWeatherForecast(
-  latitude: number,
-  longitude: number,
-): Promise<ForecastDayWeather[]> {
+export async function fetchWeeklyWeatherForecast({
+  latitude,
+  longitude,
+}: Coordinates): Promise<ForecastDayWeather[]> {
   const url = new URL(env.openMeteoForecastBaseUrl);
   url.searchParams.set("latitude", String(latitude));
   url.searchParams.set("longitude", String(longitude));
@@ -168,10 +169,10 @@ interface DailyMarineResponse {
   };
 }
 
-export async function fetchWeeklySurfForecast(
-  latitude: number,
-  longitude: number,
-): Promise<Array<ForecastDaySurf | null>> {
+export async function fetchWeeklySurfForecast({
+  latitude,
+  longitude,
+}: Coordinates): Promise<Array<ForecastDaySurf | null>> {
   const url = new URL(env.openMeteoMarineBaseUrl);
   url.searchParams.set("latitude", String(latitude));
   url.searchParams.set("longitude", String(longitude));
