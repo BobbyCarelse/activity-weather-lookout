@@ -1,0 +1,65 @@
+import { evaluateSuitability } from "../activities/suitability";
+import { evaluateWeeklyScores } from "../activities/scoring";
+import {
+  fetchCurrentSurfConditions,
+  fetchCurrentWeather,
+  fetchWeeklySurfForecast,
+  fetchWeeklyWeatherForecast,
+  geocodeCity,
+} from "../weather/openMeteoClient";
+import { GeocodingMatch } from "../weather/types";
+import { AmbiguousCityError, CityNotFoundError } from "./errors";
+
+async function resolveCity(city: string): Promise<GeocodingMatch> {
+  const matches = await geocodeCity(city);
+  if (matches.length === 0) throw new CityNotFoundError(city);
+  if (matches.length > 1) throw new AmbiguousCityError(city, matches);
+  return matches[0];
+}
+
+export const resolvers = {
+  Query: {
+    activitySuggestions: async (_parent: unknown, args: { city: string }) => {
+      const match = await resolveCity(args.city);
+
+      const [weather, surfConditions] = await Promise.all([
+        fetchCurrentWeather(match.latitude, match.longitude),
+        fetchCurrentSurfConditions(match.latitude, match.longitude),
+      ]);
+
+      return {
+        city: match.name,
+        weather,
+        surfConditions,
+        suitability: evaluateSuitability(weather, surfConditions),
+      };
+    },
+
+    weeklyForecast: async (_parent: unknown, args: { city: string }) => {
+      const match = await resolveCity(args.city);
+
+      // Both calls request the same coordinates and the same 7-day window,
+      // so the two daily series line up positionally by index.
+      const [days, surfDays] = await Promise.all([
+        fetchWeeklyWeatherForecast(match.latitude, match.longitude),
+        fetchWeeklySurfForecast(match.latitude, match.longitude),
+      ]);
+
+      const scores = evaluateWeeklyScores(days, surfDays);
+
+      return {
+        city: match.name,
+        activities: (Object.keys(scores) as Array<keyof typeof scores>).map(
+          (activity) => ({
+            activity,
+            days: scores[activity].map((day) => ({
+              date: day.date,
+              score: day.score,
+              weather: day.raw,
+            })),
+          }),
+        ),
+      };
+    },
+  },
+};
