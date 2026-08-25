@@ -1,6 +1,13 @@
 import "../config/env";
 import { resolvers } from "./resolvers";
 import { AmbiguousCityError, CityNotFoundError } from "./errors";
+import {
+  fetchCurrentSurfConditions,
+  fetchCurrentWeather,
+  fetchWeeklySurfForecast,
+  fetchWeeklyWeatherForecast,
+  geocodeCity,
+} from "../weather/openMeteoClient";
 
 interface MockResponses {
   geocoding?: unknown;
@@ -19,6 +26,15 @@ function jsonResponse(body: unknown, ok = true): Response {
 }
 
 function mockOpenMeteo(responses: MockResponses) {
+  // Each of these five functions caches by coordinates/city — without
+  // clearing between tests, a later test's fetch mock would never actually
+  // be hit for a city/coordinate pair a previous test already resolved.
+  geocodeCity.clearCache();
+  fetchCurrentWeather.clearCache();
+  fetchCurrentSurfConditions.clearCache();
+  fetchWeeklyWeatherForecast.clearCache();
+  fetchWeeklySurfForecast.clearCache();
+
   global.fetch = jest.fn(async (input: RequestInfo | URL) => {
     const url = new URL(input.toString());
 
@@ -249,5 +265,20 @@ describe("Query.weeklyForecast", () => {
     const surfing = result.activities.find((a: { activity: string }) => a.activity === "SURFING")!;
 
     expect(surfing.days[0].surf).toEqual({ date: "2026-08-26", waveHeightMax: 1.2 });
+  });
+});
+
+describe("caching", () => {
+  it("serves a repeat activitySuggestions lookup for the same city from cache, without calling fetch again", async () => {
+    mockOpenMeteo({ geocoding: singleGeocodingMatch });
+
+    await resolvers.Query.activitySuggestions(null, { city: "Chamonix" });
+    const callsAfterFirstLookup = (global.fetch as jest.Mock).mock.calls.length;
+
+    await resolvers.Query.activitySuggestions(null, { city: "Chamonix" });
+    const callsAfterSecondLookup = (global.fetch as jest.Mock).mock.calls.length;
+
+    expect(callsAfterFirstLookup).toBeGreaterThan(0);
+    expect(callsAfterSecondLookup).toBe(callsAfterFirstLookup);
   });
 });

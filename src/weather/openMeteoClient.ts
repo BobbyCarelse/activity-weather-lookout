@@ -1,4 +1,5 @@
 import { env } from "../config/env";
+import { withTtlCache } from "./cache";
 import {
   Coordinates,
   ForecastDaySurf,
@@ -7,6 +8,15 @@ import {
   SurfConditions,
   WeatherSnapshot,
 } from "./types";
+
+// TTLs per CONTEXT.md's Cache Policy — reflecting how fast each data type
+// actually goes stale, not one blanket number.
+const GEOCODING_TTL_MS = 24 * 60 * 60 * 1000;
+const CURRENT_CONDITIONS_TTL_MS = 60 * 60 * 1000;
+const WEEKLY_FORECAST_TTL_MS = 3 * 60 * 60 * 1000;
+
+const coordinatesKey = ({ latitude, longitude }: Coordinates): string =>
+  `${latitude},${longitude}`;
 
 interface GeocodingResponse {
   results?: Array<{
@@ -20,7 +30,7 @@ interface GeocodingResponse {
   }>;
 }
 
-export async function geocodeCity(city: string): Promise<GeocodingMatch[]> {
+async function geocodeCityUncached(city: string): Promise<GeocodingMatch[]> {
   const url = new URL(env.openMeteoGeocodingBaseUrl);
   url.searchParams.set("name", city);
   url.searchParams.set("count", "10");
@@ -44,6 +54,12 @@ export async function geocodeCity(city: string): Promise<GeocodingMatch[]> {
   }));
 }
 
+export const geocodeCity = withTtlCache(
+  geocodeCityUncached,
+  GEOCODING_TTL_MS,
+  (city) => city.trim().toLowerCase(),
+);
+
 interface CurrentWeatherResponse {
   current: {
     temperature_2m: number;
@@ -56,7 +72,7 @@ interface CurrentWeatherResponse {
   };
 }
 
-export async function fetchCurrentWeather({
+async function fetchCurrentWeatherUncached({
   latitude,
   longitude,
 }: Coordinates): Promise<WeatherSnapshot> {
@@ -89,6 +105,12 @@ export async function fetchCurrentWeather({
   };
 }
 
+export const fetchCurrentWeather = withTtlCache(
+  fetchCurrentWeatherUncached,
+  CURRENT_CONDITIONS_TTL_MS,
+  coordinatesKey,
+);
+
 interface CurrentMarineResponse {
   current: {
     wave_height: number | null;
@@ -97,7 +119,7 @@ interface CurrentMarineResponse {
   };
 }
 
-export async function fetchCurrentSurfConditions({
+async function fetchCurrentSurfConditionsUncached({
   latitude,
   longitude,
 }: Coordinates): Promise<SurfConditions | null> {
@@ -131,6 +153,12 @@ export async function fetchCurrentSurfConditions({
   };
 }
 
+export const fetchCurrentSurfConditions = withTtlCache(
+  fetchCurrentSurfConditionsUncached,
+  CURRENT_CONDITIONS_TTL_MS,
+  coordinatesKey,
+);
+
 interface DailyWeatherResponse {
   daily: {
     time: string[];
@@ -141,7 +169,7 @@ interface DailyWeatherResponse {
   };
 }
 
-export async function fetchWeeklyWeatherForecast({
+async function fetchWeeklyWeatherForecastUncached({
   latitude,
   longitude,
 }: Coordinates): Promise<ForecastDayWeather[]> {
@@ -170,6 +198,12 @@ export async function fetchWeeklyWeatherForecast({
   }));
 }
 
+export const fetchWeeklyWeatherForecast = withTtlCache(
+  fetchWeeklyWeatherForecastUncached,
+  WEEKLY_FORECAST_TTL_MS,
+  coordinatesKey,
+);
+
 interface DailyMarineResponse {
   daily: {
     time: string[];
@@ -177,7 +211,7 @@ interface DailyMarineResponse {
   };
 }
 
-export async function fetchWeeklySurfForecast({
+async function fetchWeeklySurfForecastUncached({
   latitude,
   longitude,
 }: Coordinates): Promise<Array<ForecastDaySurf | null>> {
@@ -206,3 +240,9 @@ export async function fetchWeeklySurfForecast({
     return { date, waveHeightMax };
   });
 }
+
+export const fetchWeeklySurfForecast = withTtlCache(
+  fetchWeeklySurfForecastUncached,
+  WEEKLY_FORECAST_TTL_MS,
+  coordinatesKey,
+);

@@ -8,7 +8,7 @@ A GraphQL API that, given a city name, looks up its current weather and reports 
 One of exactly four fixed categories the API can recommend: Skiing, Surfing, Outdoor Sightseeing, Indoor Sightseeing. Not user-extensible.
 
 **Weather Snapshot**:
-The current (not forecast, not historical) atmospheric conditions for a City — temperature (°C), precipitation, snowfall (cm), snow depth (cm), wind speed (km/h), weather code, cloud cover — fetched from Open-Meteo's Forecast API at request time. Snow depth is normalized to cm at the fetch boundary since Open-Meteo's own API returns it in metres while every other snow-related figure here (snowfall, and the Suitability threshold) is in cm — a real bug once, worth stating explicitly so it isn't reintroduced.
+The current (not forecast, not historical) atmospheric conditions for a City — temperature (°C), precipitation, snowfall (cm), snow depth (cm), wind speed (km/h), weather code, cloud cover — sourced from Open-Meteo's Forecast API, though a given request may be served from a short-lived cache rather than a fresh call every time (see Cache Policy). Snow depth is normalized to cm at the fetch boundary since Open-Meteo's own API returns it in metres while every other snow-related figure here (snowfall, and the Suitability threshold) is in cm — a real bug once, worth stating explicitly so it isn't reintroduced.
 _Avoid_: Forecast (implies future conditions; this app only ever reads "right now")
 
 **Surf Conditions**:
@@ -63,3 +63,11 @@ Multiple City Lookup candidates for one typed name that all describe the same re
 2. **Proximity**: of the remaining populated-place candidates, if every pair is within 25km of each other, they're a Coincident Cluster and City Lookup resolves to the most populous one (ties, or missing population data, fall back to whichever candidate the geocoder listed first). If any pair exceeds 25km, they're not a cluster — this is a genuine Ambiguous Match.
 
 Country or even admin1 (region/state) matching alone was considered and rejected as the detection method — a single large region can itself contain two unrelated places sharing a name, so it doesn't actually test what proximity tests directly.
+
+**Cache Policy**:
+How long a fetched result may be reused before this app re-fetches it from Open-Meteo, per data type — reflecting how fast each type actually goes stale, not one blanket number:
+- City Lookup results: 24 hours (a city's coordinates are effectively permanent)
+- Weather Snapshot / Surf Conditions: 1 hour
+- Forecast Day / its Suitability Score inputs: 3 hours
+
+This is a genuine cache, not durable storage — nothing here is meant to outlive its TTL or survive a restart; there's no feature yet (e.g. historical tracking) that would justify data outliving its usefulness for answering "is this Activity good right now / this week."
