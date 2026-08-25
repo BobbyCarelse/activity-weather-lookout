@@ -87,7 +87,7 @@ describe("Query.activitySuggestions", () => {
           temperature_2m: -10,
           rain: 0,
           snowfall: 2,
-          snow_depth: 80,
+          snow_depth: 0.8, // metres, as Open-Meteo actually returns it -> 80cm
           wind_speed_10m: 5,
           weather_code: 71,
           cloud_cover: 40,
@@ -102,6 +102,9 @@ describe("Query.activitySuggestions", () => {
 
     expect(result.city).toBe("Chamonix");
     expect(result.weather.temperature).toBe(-10);
+    // Open-Meteo returns snow_depth in metres (0.8); WeatherSnapshot converts
+    // it to cm (80) to match CONTEXT.md's threshold unit.
+    expect(result.weather.snowDepth).toBe(80);
     expect(result.surfConditions).toBeNull();
     expect(result.suitability).toContainEqual({ activity: "SKIING", suitable: true });
     expect(result.suitability).toContainEqual({ activity: "SURFING", suitable: false });

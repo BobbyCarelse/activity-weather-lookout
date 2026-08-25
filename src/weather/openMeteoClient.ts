@@ -78,7 +78,11 @@ export async function fetchCurrentWeather({
     temperature: body.current.temperature_2m,
     rain: body.current.rain,
     snowfall: body.current.snowfall,
-    snowDepth: body.current.snow_depth,
+    // Open-Meteo returns snow_depth in metres; CONTEXT.md's Skiing
+    // threshold (and WeatherSnapshot.snowDepth generally) is in cm, matching
+    // snowfall's own unit — convert at the boundary so nothing downstream
+    // has to know Open-Meteo's raw unit.
+    snowDepth: body.current.snow_depth * 100,
     windSpeed: body.current.wind_speed_10m,
     weatherCode: body.current.weather_code,
     cloudCover: body.current.cloud_cover,

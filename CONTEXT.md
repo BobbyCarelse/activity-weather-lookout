@@ -8,7 +8,7 @@ A GraphQL API that, given a city name, looks up its current weather and reports 
 One of exactly four fixed categories the API can recommend: Skiing, Surfing, Outdoor Sightseeing, Indoor Sightseeing. Not user-extensible.
 
 **Weather Snapshot**:
-The current (not forecast, not historical) atmospheric conditions for a City — temperature, precipitation, snowfall, snow depth, wind speed, weather code, cloud cover — fetched from Open-Meteo's Forecast API at request time.
+The current (not forecast, not historical) atmospheric conditions for a City — temperature (°C), precipitation, snowfall (cm), snow depth (cm), wind speed (km/h), weather code, cloud cover — fetched from Open-Meteo's Forecast API at request time. Snow depth is normalized to cm at the fetch boundary since Open-Meteo's own API returns it in metres while every other snow-related figure here (snowfall, and the Suitability threshold) is in cm — a real bug once, worth stating explicitly so it isn't reintroduced.
 _Avoid_: Forecast (implies future conditions; this app only ever reads "right now")
 
 **Surf Conditions**:
