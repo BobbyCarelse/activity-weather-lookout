@@ -1,0 +1,7 @@
+# Auto-resolve Coincident Clusters instead of always erroring on multiple City Lookup matches
+
+The original rule (no ADR at the time, just CONTEXT.md) was: any City Lookup match count above 1 is an Ambiguous Match, full stop — no auto-picking, since there's no frontend to resolve ambiguity before the request lands. Real testing against "Cape Town" showed this was too strict: the geocoder returned the city itself, its own international airport 17km away, and — by pure name coincidence — an unrelated headland in Australia. None of that is genuine ambiguity about which real-world place the caller meant.
+
+We considered "same country" and "same country + admin1" as cheap ways to detect this, and rejected both: a live counterexample ("Nazaré" recurring across several unrelated Brazilian states, all one country) showed administrative-label matching doesn't actually test what we care about — whether the candidates are close enough together that the weather wouldn't meaningfully differ. We settled on two passes instead: discard candidates whose `feature_code` isn't a populated-place type first (this alone resolves the Cape Town case, since the airport and the headland aren't populated places), then cluster the rest by geographic proximity (25km) rather than administrative boundaries, resolving a cluster to its most populous member.
+
+This only narrows Ambiguous Match — genuinely scattered candidates (Springfield, the within-country Nazaré case) still error with the full candidate list, exactly as before.

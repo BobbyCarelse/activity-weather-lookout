@@ -1,5 +1,6 @@
 import { evaluateSuitability } from "../activities/suitability";
 import { evaluateWeeklyScores } from "../activities/scoring";
+import { resolveCityCandidates } from "../weather/cityResolution";
 import {
   fetchCurrentSurfConditions,
   fetchCurrentWeather,
@@ -12,9 +13,13 @@ import { AmbiguousCityError, CityNotFoundError } from "./errors";
 
 async function resolveCity(city: string): Promise<GeocodingMatch> {
   const matches = await geocodeCity(city);
-  if (matches.length === 0) throw new CityNotFoundError(city);
-  if (matches.length > 1) throw new AmbiguousCityError(city, matches);
-  return matches[0];
+  const resolution = resolveCityCandidates(matches);
+
+  if (resolution.status === "not_found") throw new CityNotFoundError(city);
+  if (resolution.status === "ambiguous") {
+    throw new AmbiguousCityError(city, resolution.candidates);
+  }
+  return resolution.match;
 }
 
 export const resolvers = {

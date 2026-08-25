@@ -15,6 +15,8 @@ interface GeocodingResponse {
     longitude: number;
     country?: string;
     admin1?: string;
+    feature_code: string;
+    population?: number;
   }>;
 }
 
@@ -37,6 +39,8 @@ export async function geocodeCity(city: string): Promise<GeocodingMatch[]> {
     longitude: result.longitude,
     country: result.country ?? null,
     admin1: result.admin1 ?? null,
+    featureCode: result.feature_code,
+    population: result.population ?? null,
   }));
 }
 

@@ -66,7 +66,15 @@ function mockOpenMeteo(responses: MockResponses) {
 
 const singleGeocodingMatch = {
   results: [
-    { name: "Chamonix", latitude: 45.9, longitude: 6.87, country: "France", admin1: "Auvergne-Rhône-Alpes" },
+    {
+      name: "Chamonix",
+      latitude: 45.9,
+      longitude: 6.87,
+      country: "France",
+      admin1: "Auvergne-Rhône-Alpes",
+      feature_code: "PPLA",
+      population: 8_900,
+    },
   ],
 };
 
@@ -107,12 +115,28 @@ describe("Query.activitySuggestions", () => {
     ).rejects.toBeInstanceOf(CityNotFoundError);
   });
 
-  it("throws AmbiguousCityError with the candidate list when the geocoder returns multiple matches", async () => {
+  it("throws AmbiguousCityError with the candidate list when the geocoder returns genuinely distinct matches", async () => {
     mockOpenMeteo({
       geocoding: {
         results: [
-          { name: "Springfield", latitude: 39.8, longitude: -89.6, country: "United States", admin1: "Illinois" },
-          { name: "Springfield", latitude: 37.2, longitude: -93.3, country: "United States", admin1: "Missouri" },
+          {
+            name: "Springfield",
+            latitude: 39.8,
+            longitude: -89.6,
+            country: "United States",
+            admin1: "Illinois",
+            feature_code: "PPLA2",
+            population: 114_000,
+          },
+          {
+            name: "Springfield",
+            latitude: 37.2,
+            longitude: -93.3,
+            country: "United States",
+            admin1: "Missouri",
+            feature_code: "PPLA2",
+            population: 169_000,
+          },
         ],
       },
     });
@@ -128,6 +152,43 @@ describe("Query.activitySuggestions", () => {
         ],
       },
     });
+  });
+
+  it("resolves a Coincident Cluster instead of erroring, like the real Cape Town case", async () => {
+    mockOpenMeteo({
+      geocoding: {
+        results: [
+          {
+            name: "Cape Town",
+            latitude: -33.92584,
+            longitude: 18.42322,
+            country: "South Africa",
+            admin1: "Western Cape",
+            feature_code: "PPLA",
+            population: 4_772_846,
+          },
+          {
+            name: "Cape Town International Airport",
+            latitude: -33.96481,
+            longitude: 18.60167,
+            country: "South Africa",
+            admin1: "Western Cape",
+            feature_code: "AIRP",
+          },
+          {
+            name: "Cape Townshend",
+            latitude: -22.2,
+            longitude: 150.5,
+            country: "Australia",
+            admin1: "Queensland",
+            feature_code: "CAPE",
+          },
+        ],
+      },
+    });
+
+    const result = await resolvers.Query.activitySuggestions(null, { city: "Cape Town" });
+    expect(result.city).toBe("Cape Town");
   });
 });
 

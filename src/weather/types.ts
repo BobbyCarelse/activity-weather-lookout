@@ -13,6 +13,8 @@ export interface GeocodingMatch extends Coordinates {
   name: string;
   country: string | null;
   admin1: string | null;
+  featureCode: string;
+  population: number | null;
 }
 
 export interface WeatherSnapshot {
